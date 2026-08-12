@@ -113,8 +113,8 @@
 				#audio-notice { display: none !important; }
 			}
 		</style>
-		<link id="-gd-engine-icon" rel="icon" type="image/png" href="heart_rooms_audio_v2.icon.png" />
-<link rel="apple-touch-icon" href="heart_rooms_audio_v2.apple-touch-icon.png"/>
+		<link id="-gd-engine-icon" rel="icon" type="image/png" href="heart_rooms_audio_v4.icon.png" />
+<link rel="apple-touch-icon" href="heart_rooms_audio_v4.apple-touch-icon.png"/>
 
 	</head>
 	<body>
@@ -128,6 +128,7 @@
 
 		<div id="audio-notice"><button id="audio-start" type="button">🔊 点击开启声音</button></div>
 		<audio id="web-bgm" src="heart_rooms_bgm_v2.mp3" preload="auto" loop playsinline></audio>
+		<audio id="web-sfx" preload="auto" playsinline></audio>
 
 		<div id="rotate-notice" aria-live="polite">
 			<div class="rotate-card">
@@ -152,9 +153,9 @@
 				window.webkitAudioContext = TrackedAudioContext;
 			}());
 		</script>
-		<script src="heart_rooms_audio_v2.js"></script>
+		<script src="heart_rooms_audio_v4.js"></script>
 		<script>
-			const godotConfig = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"heart_rooms_audio_v2","experimentalVK":false,"fileSizes":{"heart_rooms_audio_v2.pck":4437740,"heart_rooms_audio_v2.wasm":39513091},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+			const godotConfig = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"heart_rooms_audio_v4","experimentalVK":false,"fileSizes":{"heart_rooms_audio_v4.pck":4438812,"heart_rooms_audio_v4.wasm":39513091},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
 			const debugCapture = new URLSearchParams(window.location.search).get('capture');
 			if (debugCapture === 'dialogue') {
 				godotConfig.args = ['--', '--capture-dialogue'];
@@ -166,7 +167,38 @@
 			const audioNotice = document.getElementById('audio-notice');
 			const audioStart = document.getElementById('audio-start');
 			const webBgm = document.getElementById('web-bgm');
+			const webSfx = document.getElementById('web-sfx');
 			const canvas = document.getElementById('canvas');
+			const sfxFiles = {
+				jump: 'heart_sfx_pop_v2.ogg',
+				bounce: 'heart_sfx_pop_v2.ogg',
+				collect: 'heart_sfx_bi_v2.ogg',
+				switch: 'heart_sfx_type_v2.wav',
+				dialogue: 'heart_sfx_type_v2.wav',
+				firework: 'heart_sfx_firework_v2.mp3',
+				door: 'heart_sfx_door_v2.mp3',
+				finale: 'heart_sfx_finale_v2.mp3',
+				write: 'heart_sfx_write_v2.ogg',
+				openbook: 'heart_sfx_openbook_v2.wav',
+				match: 'heart_sfx_match_v2.mp3',
+				blow: 'heart_sfx_blow_v2.ogg'
+			};
+			window.HeartRoomAudio = {
+				play(id, pitch, volume) {
+					const file = sfxFiles[id];
+					if (!file) return;
+					webSfx.pause();
+					if (!webSfx.src.endsWith(file)) webSfx.src = file;
+					webSfx.currentTime = 0;
+					webSfx.playbackRate = Math.max(0.65, Math.min(1.55, pitch || 1));
+					webSfx.volume = Math.max(0, Math.min(1, volume || 0.4));
+					webSfx.play().catch(error => console.error('SFX play failed', id, error));
+				},
+				stop() {
+					webSfx.pause();
+					webSfx.currentTime = 0;
+				}
+			};
 
 			function showFailure(error) {
 				console.error(error);
