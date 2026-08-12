@@ -91,16 +91,20 @@
 
 			#audio-notice {
 				display: none;
-				pointer-events: none;
+				background: rgba(3, 6, 19, 0.50);
+				pointer-events: auto;
 				z-index: 30;
 			}
 
-			#audio-notice span {
+			#audio-start {
 				padding: 10px 18px;
 				border: 2px solid #6fe0cf;
 				box-shadow: 5px 5px 0 #28204d;
 				background: rgba(16, 24, 51, 0.94);
+				color: #fff3b5;
+				font: inherit;
 				font-size: 15px;
+				cursor: pointer;
 			}
 
 			@media (orientation: portrait) and (max-width: 900px) {
@@ -109,8 +113,8 @@
 				#audio-notice { display: none !important; }
 			}
 		</style>
-		<link id="-gd-engine-icon" rel="icon" type="image/png" href="heart_rooms_038a21f.icon.png" />
-<link rel="apple-touch-icon" href="heart_rooms_038a21f.apple-touch-icon.png"/>
+		<link id="-gd-engine-icon" rel="icon" type="image/png" href="heart_rooms_audio_v2.icon.png" />
+<link rel="apple-touch-icon" href="heart_rooms_audio_v2.apple-touch-icon.png"/>
 
 	</head>
 	<body>
@@ -122,7 +126,8 @@
 			<div id="status-notice" hidden></div>
 		</div>
 
-		<div id="audio-notice"><span>轻触画面开始</span></div>
+		<div id="audio-notice"><button id="audio-start" type="button">🔊 点击开启声音</button></div>
+		<audio id="web-bgm" src="heart_rooms_bgm_v2.mp3" preload="auto" loop playsinline></audio>
 
 		<div id="rotate-notice" aria-live="polite">
 			<div class="rotate-card">
@@ -131,9 +136,25 @@
 			</div>
 		</div>
 
-		<script src="heart_rooms_038a21f.js"></script>
 		<script>
-			const godotConfig = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"heart_rooms_038a21f","experimentalVK":false,"fileSizes":{"heart_rooms_038a21f.pck":4437308,"heart_rooms_038a21f.wasm":39513091},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+			window.__heartAudioContexts = [];
+			(function trackAudioContexts() {
+				const NativeAudioContext = window.AudioContext || window.webkitAudioContext;
+				if (!NativeAudioContext) return;
+				function TrackedAudioContext(...args) {
+					const context = new NativeAudioContext(...args);
+					window.__heartAudioContexts.push(context);
+					return context;
+				}
+				TrackedAudioContext.prototype = NativeAudioContext.prototype;
+				Object.setPrototypeOf(TrackedAudioContext, NativeAudioContext);
+				window.AudioContext = TrackedAudioContext;
+				window.webkitAudioContext = TrackedAudioContext;
+			}());
+		</script>
+		<script src="heart_rooms_audio_v2.js"></script>
+		<script>
+			const godotConfig = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"heart_rooms_audio_v2","experimentalVK":false,"fileSizes":{"heart_rooms_audio_v2.pck":4437740,"heart_rooms_audio_v2.wasm":39513091},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
 			const debugCapture = new URLSearchParams(window.location.search).get('capture');
 			if (debugCapture === 'dialogue') {
 				godotConfig.args = ['--', '--capture-dialogue'];
@@ -143,6 +164,8 @@
 			const progress = document.getElementById('status-progress');
 			const notice = document.getElementById('status-notice');
 			const audioNotice = document.getElementById('audio-notice');
+			const audioStart = document.getElementById('audio-start');
+			const webBgm = document.getElementById('web-bgm');
 			const canvas = document.getElementById('canvas');
 
 			function showFailure(error) {
@@ -167,13 +190,26 @@
 				canvas.focus();
 			}, showFailure);
 
-			function acknowledgeStart() {
-				audioNotice.style.display = 'none';
-				canvas.focus();
+			async function acknowledgeStart() {
+				const playback = webBgm.play();
+				for (const context of window.__heartAudioContexts) {
+					if (context.state !== 'running') context.resume().catch(() => {});
+				}
+				try {
+					await playback;
+					webBgm.volume = 0.48;
+					audioNotice.style.display = 'none';
+					canvas.focus();
+				} catch (error) {
+					console.error('Audio start failed', error);
+					audioStart.textContent = '🔊 再次点击开启声音';
+				}
 			}
 
-			canvas.addEventListener('pointerdown', acknowledgeStart, { once: true, capture: false });
-			window.addEventListener('keydown', acknowledgeStart, { once: true, capture: false });
+			audioStart.addEventListener('click', acknowledgeStart);
+			window.addEventListener('keydown', (event) => {
+				if (event.key === 'Enter' || event.key === ' ') acknowledgeStart();
+			}, { once: true });
 		</script>
 	</body>
 </html>
